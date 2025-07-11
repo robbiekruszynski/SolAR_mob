@@ -1,6 +1,7 @@
 import { PublicKey } from '@solana/web3.js';
 import { Treasure, UserLocation } from '../types';
 import { CONFIG } from './config';
+import { leaderboardService } from './leaderboard';
 
 export interface TreasureService {
   getNearbyTreasures(location: UserLocation): Promise<Treasure[]>;
@@ -55,10 +56,16 @@ export class MockTreasureService implements TreasureService {
     });
   }
 
-  async discoverTreasure(treasureId: string): Promise<boolean> {
+  async discoverTreasure(treasureId: string, walletAddress?: string): Promise<boolean> {
     const treasure = this.mockTreasures.find(t => t.id === treasureId);
     if (treasure && !treasure.isFound) {
       treasure.isFound = true;
+      
+      // Update leaderboard if wallet address is provided
+      if (walletAddress) {
+        await leaderboardService.updatePlayerMint(walletAddress, treasure.bonkReward);
+      }
+      
       return true;
     }
     return false;

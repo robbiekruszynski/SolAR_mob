@@ -28,6 +28,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <Text style={styles.statNumber}>{state.wallet.bonkBalance}</Text>
           <Text style={styles.statLabel}>BONK Earned</Text>
         </View>
+
+        <View style={styles.statCard}>
+          <Ionicons name="people" size={24} color="#4CAF50" />
+          <Text style={styles.statNumber}>
+            {state.leaderboard.stats?.totalPlayers || 0}
+          </Text>
+          <Text style={styles.statLabel}>Players</Text>
+        </View>
       </View>
 
       <View style={styles.actionContainer}>
@@ -55,6 +63,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <Text style={styles.actionButtonText}>
             {state.wallet.connected ? 'Wallet Connected' : 'Connect Wallet'}
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.secondaryButton]}
+          onPress={() => navigation.navigate('Leaderboard')}
+        >
+          <Ionicons name="trophy" size={32} color="#FFFFFF" />
+          <Text style={styles.actionButtonText}>View Leaderboard</Text>
         </TouchableOpacity>
       </View>
 

@@ -1,39 +1,63 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useApp } from '../context/AppContext';
 
 interface ARScreenProps {
   navigation: any;
 }
 
 const ARScreen: React.FC<ARScreenProps> = ({ navigation }) => {
+  const { state, discoverTreasure, updatePlayerMint } = useApp();
   const [isScanning, setIsScanning] = useState(false);
 
-  const handleScanTreasure = () => {
+  const handleScanTreasure = async () => {
     if (isScanning) return;
     
     setIsScanning(true);
-    Alert.alert(
-      'Treasure Found! 🎉',
-      'You discovered a treasure! Would you like to mint the NFT?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => setIsScanning(false),
-        },
-        {
-          text: 'Mint NFT',
-          onPress: () => {
-            // Simulate NFT minting
-            setTimeout(() => {
-              Alert.alert('Success!', 'NFT minted successfully! You earned 100 BONK!');
-              setIsScanning(false);
-            }, 2000);
+    
+    try {
+      // Simulate treasure discovery
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const treasureId = `treasure_${Date.now()}`;
+      const bonkReward = Math.floor(Math.random() * 200) + 50; // Random reward between 50-250 BONK
+      
+      Alert.alert(
+        'Treasure Found! 🎉',
+        `You discovered a treasure! Would you like to mint the NFT and earn ${bonkReward} BONK?`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => setIsScanning(false),
           },
-        },
-      ]
-    );
+          {
+            text: 'Mint NFT',
+            onPress: async () => {
+              try {
+                // Update leaderboard if wallet is connected
+                if (state.wallet.publicKey) {
+                  await updatePlayerMint(state.wallet.publicKey.toString(), bonkReward);
+                }
+                
+                Alert.alert(
+                  'Success! 🎉', 
+                  `NFT minted successfully! You earned ${bonkReward} BONK!\n\nCheck the leaderboard to see your ranking!`
+                );
+              } catch (error) {
+                Alert.alert('Error', 'Failed to update leaderboard');
+              } finally {
+                setIsScanning(false);
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to scan for treasures');
+      setIsScanning(false);
+    }
   };
 
   return (

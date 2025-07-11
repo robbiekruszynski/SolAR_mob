@@ -9,6 +9,7 @@ A mobile AR treasure hunt game built for Solana Mobile, where users hunt for AR 
 - **Solana Wallet Integration**: Seamless wallet connection using Solana Mobile Stack
 - **NFT Minting**: Mint unique NFTs when you discover treasures
 - **BONK Integration**: Earn BONK tokens for finding treasures
+- **Leaderboard System**: Compete with other players and track your progress
 - **Cross-Platform**: Works on both iOS and Android
 
 ## 🏗️ Tech Stack
@@ -90,7 +91,9 @@ npm run android
 2. **Location Verification**: GPS confirms you're at the right spot
 3. **NFT Minting**: Mint unique NFTs when treasures are found
 4. **BONK Rewards**: Earn BONK tokens for each discovery
-5. **Leaderboard**: Compete with other treasure hunters
+5. **Leaderboard**: Compete with other treasure hunters and track rankings
+6. **Player Search**: Search for specific players in the leaderboard
+7. **Achievements**: Unlock achievements based on your treasure hunting progress
 
 ## 🛠️ Development
 
@@ -110,10 +113,15 @@ SolAR_mob/
 - **Location Service**: GPS-based treasure tracking
 - **NFT Minter**: Smart contract interaction
 - **BONK Integration**: Token rewards system
+- **Leaderboard System**: Player rankings and statistics
+- **Search Functionality**: Find specific players
 
 ## 🎯 Hackathon Goals
 
 - [x] Project setup and architecture
+- [x] Leaderboard system with player rankings
+- [x] Player search functionality
+- [x] Achievement system
 - [ ] AR camera integration
 - [ ] GPS location services
 - [ ] Solana wallet connection

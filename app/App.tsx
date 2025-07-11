@@ -9,6 +9,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import ARScreen from './src/screens/ARScreen';
 import MapScreen from './src/screens/MapScreen';
 import WalletScreen from './src/screens/WalletScreen';
+import LeaderboardScreen from './src/screens/LeaderboardScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -27,6 +28,8 @@ function AppNavigator() {
             iconName = focused ? 'map' : 'map-outline';
           } else if (route.name === 'Wallet') {
             iconName = focused ? 'wallet' : 'wallet-outline';
+          } else if (route.name === 'Leaderboard') {
+            iconName = focused ? 'trophy' : 'trophy-outline';
           } else {
             iconName = 'help-outline';
           }
@@ -64,6 +67,11 @@ function AppNavigator() {
         name="Wallet" 
         component={WalletScreen}
         options={{ title: 'Wallet' }}
+      />
+      <Tab.Screen 
+        name="Leaderboard" 
+        component={LeaderboardScreen}
+        options={{ title: 'Leaderboard' }}
       />
     </Tab.Navigator>
   );

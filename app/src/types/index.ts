@@ -41,11 +41,19 @@ export interface WalletState {
   bonkBalance: number;
 }
 
+export interface LeaderboardState {
+  players: any[];
+  stats: any;
+  loading: boolean;
+  error: string | null;
+}
+
 export interface AppState {
   wallet: WalletState;
   currentLocation: UserLocation | null;
   nearbyTreasures: Treasure[];
   discoveredTreasures: Treasure[];
+  leaderboard: LeaderboardState;
   isLoading: boolean;
   error: string | null;
 }

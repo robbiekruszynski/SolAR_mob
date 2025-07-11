@@ -3,6 +3,7 @@ import { AppState, Treasure, UserLocation } from '../types';
 import { walletService } from '../services/wallet';
 import { treasureService } from '../services/treasure';
 import { locationService } from '../services/location';
+import { leaderboardService } from '../services/leaderboard';
 import { CONFIG, validateConfig } from '../services/config';
 
 // Action types
@@ -13,7 +14,11 @@ type AppAction =
   | { type: 'SET_NEARBY_TREASURES'; payload: Treasure[] }
   | { type: 'SET_DISCOVERED_TREASURES'; payload: Treasure[] }
   | { type: 'UPDATE_WALLET_STATE'; payload: any }
-  | { type: 'DISCOVER_TREASURE'; payload: string };
+  | { type: 'DISCOVER_TREASURE'; payload: string }
+  | { type: 'SET_LEADERBOARD_PLAYERS'; payload: any[] }
+  | { type: 'SET_LEADERBOARD_STATS'; payload: any }
+  | { type: 'SET_LEADERBOARD_LOADING'; payload: boolean }
+  | { type: 'SET_LEADERBOARD_ERROR'; payload: string | null };
 
 // Initial state
 const initialState: AppState = {
@@ -26,6 +31,12 @@ const initialState: AppState = {
   currentLocation: null,
   nearbyTreasures: [],
   discoveredTreasures: [],
+  leaderboard: {
+    players: [],
+    stats: null,
+    loading: false,
+    error: null,
+  },
   isLoading: false,
   error: null,
 };
@@ -60,6 +71,26 @@ function appReducer(state: AppState, action: AppAction): AppState {
         };
       }
       return state;
+    case 'SET_LEADERBOARD_PLAYERS':
+      return {
+        ...state,
+        leaderboard: { ...state.leaderboard, players: action.payload },
+      };
+    case 'SET_LEADERBOARD_STATS':
+      return {
+        ...state,
+        leaderboard: { ...state.leaderboard, stats: action.payload },
+      };
+    case 'SET_LEADERBOARD_LOADING':
+      return {
+        ...state,
+        leaderboard: { ...state.leaderboard, loading: action.payload },
+      };
+    case 'SET_LEADERBOARD_ERROR':
+      return {
+        ...state,
+        leaderboard: { ...state.leaderboard, error: action.payload },
+      };
     default:
       return state;
   }
@@ -73,6 +104,8 @@ interface AppContextType {
   disconnectWallet: () => Promise<void>;
   discoverTreasure: (treasureId: string) => Promise<void>;
   initializeApp: () => Promise<void>;
+  loadLeaderboard: () => Promise<void>;
+  updatePlayerMint: (walletAddress: string, bonkEarned: number) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -136,6 +169,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const loadLeaderboard = async () => {
+    try {
+      dispatch({ type: 'SET_LEADERBOARD_LOADING', payload: true });
+      const players = await leaderboardService.getTopPlayers(15);
+      const stats = await leaderboardService.getLeaderboardStats();
+      dispatch({ type: 'SET_LEADERBOARD_PLAYERS', payload: players });
+      dispatch({ type: 'SET_LEADERBOARD_STATS', payload: stats });
+    } catch (error) {
+      dispatch({ type: 'SET_LEADERBOARD_ERROR', payload: 'Failed to load leaderboard' });
+    } finally {
+      dispatch({ type: 'SET_LEADERBOARD_LOADING', payload: false });
+    }
+  };
+
+  const updatePlayerMint = async (walletAddress: string, bonkEarned: number) => {
+    try {
+      await leaderboardService.updatePlayerMint(walletAddress, bonkEarned);
+      // Reload leaderboard to reflect changes
+      await loadLeaderboard();
+    } catch (error) {
+      console.error('Failed to update player mint:', error);
+    }
+  };
+
   const initializeApp = async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -176,6 +233,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     disconnectWallet,
     discoverTreasure,
     initializeApp,
+    loadLeaderboard,
+    updatePlayerMint,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
