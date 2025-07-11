@@ -9,6 +9,7 @@ use anchor_spl::{
 };
 use mpl_token_metadata::types::{Creator, DataV2};
 
+// Program ID - should be set via environment variable in production
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 #[program]

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { CONFIG } from '../services/config';
 
 interface WalletScreenProps {
   navigation: any;
@@ -18,7 +19,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setIsConnected(true);
-      setWalletAddress('7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU');
+      setWalletAddress(CONFIG.MOCK_WALLET_ADDRESS);
       setSolBalance(1.5);
       setBonkBalance(1000);
       

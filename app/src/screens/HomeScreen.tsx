@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useApp } from '../context/AppContext';
 
 interface HomeScreenProps {
   navigation: any;
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const { state, connectWallet } = useApp();
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -17,13 +19,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
           <Ionicons name="trophy" size={24} color="#FFD700" />
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>{state.discoveredTreasures.length}</Text>
           <Text style={styles.statLabel}>Treasures Found</Text>
         </View>
         
         <View style={styles.statCard}>
           <Ionicons name="wallet" size={24} color="#FF6B35" />
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>{state.wallet.bonkBalance}</Text>
           <Text style={styles.statLabel}>BONK Earned</Text>
         </View>
       </View>
@@ -47,10 +49,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
         <TouchableOpacity 
           style={[styles.actionButton, styles.secondaryButton]}
-          onPress={() => navigation.navigate('Wallet')}
+          onPress={connectWallet}
         >
           <Ionicons name="wallet" size={32} color="#FFFFFF" />
-          <Text style={styles.actionButtonText}>Connect Wallet</Text>
+          <Text style={styles.actionButtonText}>
+            {state.wallet.connected ? 'Wallet Connected' : 'Connect Wallet'}
+          </Text>
         </TouchableOpacity>
       </View>
 

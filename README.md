@@ -37,12 +37,20 @@ git clone <your-repo-url>
 cd SolAR_mob
 ```
 
-2. **Install dependencies**
+2. **Setup environment variables**
 ```bash
-npm install
+cd app
+cp env.example .env
+# Edit .env with your configuration
 ```
 
-3. **Setup Solana development environment**
+3. **Install dependencies**
+```bash
+cd app && npm install
+cd ../mobile-adapter && npm install
+```
+
+4. **Setup Solana development environment**
 ```bash
 # Install Solana CLI
 sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
@@ -54,12 +62,12 @@ cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
 solana config set --url localhost
 ```
 
-4. **Start the development server**
+5. **Start the development server**
 ```bash
-npm start
+cd app && npm start
 ```
 
-5. **Run on device**
+6. **Run on device**
 ```bash
 # For iOS
 npm run ios

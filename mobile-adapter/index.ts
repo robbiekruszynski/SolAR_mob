@@ -161,8 +161,10 @@ export class TreasureHuntClient {
   }
 }
 
-// BONK token integration
-export const BONK_TOKEN_MINT = new PublicKey('DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263');
+// BONK token integration - use environment variable
+export const BONK_TOKEN_MINT = new PublicKey(
+  process.env.BONK_TOKEN_MINT || 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263'
+);
 
 export class BonkIntegration {
   private connection: Connection;
@@ -212,7 +214,7 @@ export class BonkIntegration {
         // Transfer instruction
         3,
         // Amount (8 bytes)
-        ...new Uint8Array(new Uint64Array([amount]).buffer),
+        ...new Uint8Array(new BigUint64Array([BigInt(amount)]).buffer),
       ]),
     });
 
