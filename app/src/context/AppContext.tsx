@@ -5,6 +5,7 @@ import { treasureService } from '../services/treasure';
 import { locationService } from '../services/location';
 import { leaderboardService } from '../services/leaderboard';
 import { nftCreatorService } from '../services/nftCreator';
+import { mobileWalletService } from '../services/MobileWalletService';
 import { CONFIG, validateConfig } from '../services/config';
 
 // Action types
@@ -131,7 +132,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 interface AppContextType {
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
-  connectWallet: () => Promise<void>;
+  connectWallet: (walletName?: string) => Promise<void>;
   disconnectWallet: () => Promise<void>;
   discoverTreasure: (treasureId: string) => Promise<void>;
   initializeApp: () => Promise<void>;
@@ -148,22 +149,44 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  const connectWallet = async () => {
+  const connectWallet = async (walletName?: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const publicKey = await walletService.connect();
-      const balance = await walletService.getBalance();
-      const bonkBalance = await walletService.getBonkBalance();
       
-      dispatch({
-        type: 'UPDATE_WALLET_STATE',
-        payload: {
-          connected: true,
-          publicKey,
-          balance,
-          bonkBalance,
-        },
-      });
+      // Check if wallet is already connected
+      const walletState = mobileWalletService.getState();
+      if (walletState.connected) {
+        const balance = await mobileWalletService.getBalance();
+        const bonkBalance = await mobileWalletService.getBonkBalance();
+        
+        dispatch({
+          type: 'UPDATE_WALLET_STATE',
+          payload: {
+            connected: true,
+            publicKey: walletState.publicKey,
+            balance,
+            bonkBalance,
+          },
+        });
+      } else if (walletName) {
+        // Connect to specific wallet
+        const publicKey = await mobileWalletService.connect(walletName);
+        const balance = await mobileWalletService.getBalance();
+        const bonkBalance = await mobileWalletService.getBonkBalance();
+        
+        dispatch({
+          type: 'UPDATE_WALLET_STATE',
+          payload: {
+            connected: true,
+            publicKey,
+            balance,
+            bonkBalance,
+          },
+        });
+      } else {
+        // If no wallet is connected, show wallet selection
+        dispatch({ type: 'SET_ERROR', payload: 'Please select a wallet to connect' });
+      }
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to connect wallet' });
     } finally {
@@ -173,7 +196,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const disconnectWallet = async () => {
     try {
-      await walletService.disconnect();
+      await mobileWalletService.disconnect();
       dispatch({
         type: 'UPDATE_WALLET_STATE',
         payload: {

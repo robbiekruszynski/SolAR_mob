@@ -11,7 +11,12 @@
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.4.2",
     "@react-navigation/native": "^7.1.14",
+    "@react-navigation/stack": "^7.4.2",
     "@solana/spl-token": "^0.4.13",
+    "@solana/wallet-adapter-base": "^0.9.27",
+    "@solana/wallet-adapter-react": "^0.15.39",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
+    "@solana/wallet-adapter-wallets": "^0.19.37",
     "@solana/web3.js": "^1.98.2",
     "expo": "~53.0.17",
     "expo-camera": "^16.1.10",
@@ -21,7 +26,11 @@
     "expo-three": "^8.0.0",
     "react": "19.0.0",
     "react-native": "0.79.5",
-    "react-native-elements": "^3.4.3"
+    "react-native-elements": "^3.4.3",
+    "react-native-gesture-handler": "^2.27.1",
+    "react-native-polyfill-globals": "^3.1.0",
+    "react-native-safe-area-context": "^5.5.2",
+    "react-native-screens": "^4.11.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

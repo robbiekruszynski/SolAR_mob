@@ -57,11 +57,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
         <TouchableOpacity 
           style={[styles.actionButton, styles.secondaryButton]}
-          onPress={connectWallet}
+          onPress={() => navigation.navigate('Wallet', { screen: 'WalletSelection' })}
         >
           <Ionicons name="wallet" size={32} color="#FFFFFF" />
           <Text style={styles.actionButtonText}>
-            {state.wallet.connected ? 'Wallet Connected' : 'Connect Wallet'}
+            {state.wallet.connected ? 'Manage Wallet' : 'Connect Wallet'}
           </Text>
         </TouchableOpacity>
 

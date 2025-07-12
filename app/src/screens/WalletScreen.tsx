@@ -1,40 +1,27 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CONFIG } from '../services/config';
+import { useApp } from '../context/AppContext';
+import { mobileWalletService } from '../services/MobileWalletService';
 
 interface WalletScreenProps {
   navigation: any;
 }
 
 const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState('');
-  const [solBalance, setSolBalance] = useState(0);
-  const [bonkBalance, setBonkBalance] = useState(0);
+  const { state, disconnectWallet, connectWallet } = useApp();
 
-  const connectWallet = async () => {
-    try {
-      // Simulate wallet connection
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setIsConnected(true);
-      setWalletAddress(CONFIG.MOCK_WALLET_ADDRESS);
-      setSolBalance(1.5);
-      setBonkBalance(1000);
-      
-      Alert.alert('Success!', 'Wallet connected successfully!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to connect wallet');
-    }
+  const handleConnectWallet = () => {
+    navigation.navigate('WalletSelection');
   };
 
-  const disconnectWallet = () => {
-    setIsConnected(false);
-    setWalletAddress('');
-    setSolBalance(0);
-    setBonkBalance(0);
-    Alert.alert('Disconnected', 'Wallet disconnected');
+  const handleDisconnectWallet = async () => {
+    try {
+      await disconnectWallet();
+      Alert.alert('Disconnected', 'Wallet disconnected successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to disconnect wallet');
+    }
   };
 
   const mockTransactions = [
@@ -61,16 +48,16 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
         <Text style={styles.subtitle}>Manage your Solana wallet</Text>
       </View>
 
-      {!isConnected ? (
+      {!state.wallet.connected ? (
         <View style={styles.connectContainer}>
           <Ionicons name="wallet-outline" size={64} color="#FF6B35" />
           <Text style={styles.connectTitle}>Connect Your Wallet</Text>
           <Text style={styles.connectSubtitle}>
             Connect your Solana wallet to start hunting treasures
           </Text>
-          <TouchableOpacity style={styles.connectButton} onPress={connectWallet}>
+          <TouchableOpacity style={styles.connectButton} onPress={handleConnectWallet}>
             <Ionicons name="wallet" size={24} color="#FFFFFF" />
-            <Text style={styles.connectButtonText}>Connect Wallet</Text>
+            <Text style={styles.connectButtonText}>Select Wallet</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -80,18 +67,18 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
             <View style={styles.balanceRow}>
               <View style={styles.balanceItem}>
                 <Ionicons name="logo-bitcoin" size={24} color="#FF6B35" />
-                <Text style={styles.balanceAmount}>{solBalance} SOL</Text>
+                <Text style={styles.balanceAmount}>{state.wallet.balance} SOL</Text>
               </View>
               <View style={styles.balanceItem}>
                 <Ionicons name="wallet" size={24} color="#FFD700" />
-                <Text style={styles.balanceAmount}>{bonkBalance} BONK</Text>
+                <Text style={styles.balanceAmount}>{state.wallet.bonkBalance} BONK</Text>
               </View>
             </View>
           </View>
 
           <View style={styles.addressCard}>
             <Text style={styles.addressTitle}>Wallet Address</Text>
-            <Text style={styles.addressText}>{walletAddress}</Text>
+            <Text style={styles.addressText}>{state.wallet.publicKey?.toString()}</Text>
             <TouchableOpacity style={styles.copyButton}>
               <Ionicons name="copy-outline" size={16} color="#FF6B35" />
               <Text style={styles.copyButtonText}>Copy</Text>
@@ -122,7 +109,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
             ))}
           </View>
 
-          <TouchableOpacity style={styles.disconnectButton} onPress={disconnectWallet}>
+          <TouchableOpacity style={styles.disconnectButton} onPress={handleDisconnectWallet}>
             <Ionicons name="log-out-outline" size={20} color="#FF6B35" />
             <Text style={styles.disconnectButtonText}>Disconnect Wallet</Text>
           </TouchableOpacity>
@@ -185,6 +172,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 10,
   },
+
   walletContainer: {
     padding: 20,
   },

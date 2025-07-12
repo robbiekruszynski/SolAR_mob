@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -11,8 +12,19 @@ import MapScreen from './src/screens/MapScreen';
 import WalletScreen from './src/screens/WalletScreen';
 import LeaderboardScreen from './src/screens/LeaderboardScreen';
 import NFTCreatorScreen from './src/screens/NFTCreatorScreen';
+import WalletSelectionScreen from './src/screens/WalletSelectionScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+function WalletStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="WalletMain" component={WalletScreen} />
+      <Stack.Screen name="WalletSelection" component={WalletSelectionScreen} />
+    </Stack.Navigator>
+  );
+}
 
 function AppNavigator() {
   return (
@@ -68,7 +80,7 @@ function AppNavigator() {
       />
       <Tab.Screen 
         name="Wallet" 
-        component={WalletScreen}
+        component={WalletStack}
         options={{ title: 'Wallet' }}
       />
       <Tab.Screen 
