@@ -48,12 +48,20 @@ export interface LeaderboardState {
   error: string | null;
 }
 
+export interface NFTCreatorState {
+  collections: any[];
+  stats: any;
+  loading: boolean;
+  error: string | null;
+}
+
 export interface AppState {
   wallet: WalletState;
   currentLocation: UserLocation | null;
   nearbyTreasures: Treasure[];
   discoveredTreasures: Treasure[];
   leaderboard: LeaderboardState;
+  nftCreator: NFTCreatorState;
   isLoading: boolean;
   error: string | null;
 }

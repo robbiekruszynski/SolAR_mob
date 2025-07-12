@@ -72,6 +72,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <Ionicons name="trophy" size={32} color="#FFFFFF" />
           <Text style={styles.actionButtonText}>View Leaderboard</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.secondaryButton]}
+          onPress={() => navigation.navigate('Creator')}
+        >
+          <Ionicons name="create" size={32} color="#FFFFFF" />
+          <Text style={styles.actionButtonText}>Create NFTs</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.infoContainer}>

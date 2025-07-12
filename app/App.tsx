@@ -10,6 +10,7 @@ import ARScreen from './src/screens/ARScreen';
 import MapScreen from './src/screens/MapScreen';
 import WalletScreen from './src/screens/WalletScreen';
 import LeaderboardScreen from './src/screens/LeaderboardScreen';
+import NFTCreatorScreen from './src/screens/NFTCreatorScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -30,6 +31,8 @@ function AppNavigator() {
             iconName = focused ? 'wallet' : 'wallet-outline';
           } else if (route.name === 'Leaderboard') {
             iconName = focused ? 'trophy' : 'trophy-outline';
+          } else if (route.name === 'Creator') {
+            iconName = focused ? 'create' : 'create-outline';
           } else {
             iconName = 'help-outline';
           }
@@ -72,6 +75,11 @@ function AppNavigator() {
         name="Leaderboard" 
         component={LeaderboardScreen}
         options={{ title: 'Leaderboard' }}
+      />
+      <Tab.Screen 
+        name="Creator" 
+        component={NFTCreatorScreen}
+        options={{ title: 'NFT Creator' }}
       />
     </Tab.Navigator>
   );

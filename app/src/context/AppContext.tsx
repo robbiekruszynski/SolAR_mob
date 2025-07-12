@@ -4,6 +4,7 @@ import { walletService } from '../services/wallet';
 import { treasureService } from '../services/treasure';
 import { locationService } from '../services/location';
 import { leaderboardService } from '../services/leaderboard';
+import { nftCreatorService } from '../services/nftCreator';
 import { CONFIG, validateConfig } from '../services/config';
 
 // Action types
@@ -18,7 +19,11 @@ type AppAction =
   | { type: 'SET_LEADERBOARD_PLAYERS'; payload: any[] }
   | { type: 'SET_LEADERBOARD_STATS'; payload: any }
   | { type: 'SET_LEADERBOARD_LOADING'; payload: boolean }
-  | { type: 'SET_LEADERBOARD_ERROR'; payload: string | null };
+  | { type: 'SET_LEADERBOARD_ERROR'; payload: string | null }
+  | { type: 'SET_NFT_CREATOR_COLLECTIONS'; payload: any[] }
+  | { type: 'SET_NFT_CREATOR_STATS'; payload: any }
+  | { type: 'SET_NFT_CREATOR_LOADING'; payload: boolean }
+  | { type: 'SET_NFT_CREATOR_ERROR'; payload: string | null };
 
 // Initial state
 const initialState: AppState = {
@@ -33,6 +38,12 @@ const initialState: AppState = {
   discoveredTreasures: [],
   leaderboard: {
     players: [],
+    stats: null,
+    loading: false,
+    error: null,
+  },
+  nftCreator: {
+    collections: [],
     stats: null,
     loading: false,
     error: null,
@@ -91,6 +102,26 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         leaderboard: { ...state.leaderboard, error: action.payload },
       };
+    case 'SET_NFT_CREATOR_COLLECTIONS':
+      return {
+        ...state,
+        nftCreator: { ...state.nftCreator, collections: action.payload },
+      };
+    case 'SET_NFT_CREATOR_STATS':
+      return {
+        ...state,
+        nftCreator: { ...state.nftCreator, stats: action.payload },
+      };
+    case 'SET_NFT_CREATOR_LOADING':
+      return {
+        ...state,
+        nftCreator: { ...state.nftCreator, loading: action.payload },
+      };
+    case 'SET_NFT_CREATOR_ERROR':
+      return {
+        ...state,
+        nftCreator: { ...state.nftCreator, error: action.payload },
+      };
     default:
       return state;
   }
@@ -106,6 +137,9 @@ interface AppContextType {
   initializeApp: () => Promise<void>;
   loadLeaderboard: () => Promise<void>;
   updatePlayerMint: (walletAddress: string, bonkEarned: number) => Promise<void>;
+  loadNFTCreatorData: () => Promise<void>;
+  createCollection: (collectionData: any) => Promise<void>;
+  deployCollection: (collectionId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -193,6 +227,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const loadNFTCreatorData = async () => {
+    if (!state.wallet.publicKey) return;
+    
+    try {
+      dispatch({ type: 'SET_NFT_CREATOR_LOADING', payload: true });
+      const collections = await nftCreatorService.getUserCollections(
+        state.wallet.publicKey.toString()
+      );
+      const stats = await nftCreatorService.getCreatorStats(
+        state.wallet.publicKey.toString()
+      );
+      
+      dispatch({ type: 'SET_NFT_CREATOR_COLLECTIONS', payload: collections });
+      dispatch({ type: 'SET_NFT_CREATOR_STATS', payload: stats });
+    } catch (error) {
+      dispatch({ type: 'SET_NFT_CREATOR_ERROR', payload: 'Failed to load NFT creator data' });
+    } finally {
+      dispatch({ type: 'SET_NFT_CREATOR_LOADING', payload: false });
+    }
+  };
+
+  const createCollection = async (collectionData: any) => {
+    if (!state.wallet.publicKey) {
+      throw new Error('Wallet not connected');
+    }
+    
+    try {
+      dispatch({ type: 'SET_NFT_CREATOR_LOADING', payload: true });
+      await nftCreatorService.createCollection({
+        ...collectionData,
+        creator: state.wallet.publicKey.toString(),
+      });
+      await loadNFTCreatorData();
+    } catch (error) {
+      dispatch({ type: 'SET_NFT_CREATOR_ERROR', payload: 'Failed to create collection' });
+      throw error;
+    } finally {
+      dispatch({ type: 'SET_NFT_CREATOR_LOADING', payload: false });
+    }
+  };
+
+  const deployCollection = async (collectionId: string) => {
+    try {
+      dispatch({ type: 'SET_NFT_CREATOR_LOADING', payload: true });
+      await nftCreatorService.deployCollection(collectionId);
+      await loadNFTCreatorData();
+    } catch (error) {
+      dispatch({ type: 'SET_NFT_CREATOR_ERROR', payload: 'Failed to deploy collection' });
+      throw error;
+    } finally {
+      dispatch({ type: 'SET_NFT_CREATOR_LOADING', payload: false });
+    }
+  };
+
   const initializeApp = async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -235,6 +323,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     initializeApp,
     loadLeaderboard,
     updatePlayerMint,
+    loadNFTCreatorData,
+    createCollection,
+    deployCollection,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
