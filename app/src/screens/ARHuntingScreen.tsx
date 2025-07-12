@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,39 +8,26 @@ import {
   Alert,
   Modal,
   TextInput,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
+import { useMission, Mission } from '../context/MissionContext';
 import SimpleCamera from '../components/SimpleCamera';
-
-interface Mission {
-  id: string;
-  title: string;
-  description: string;
-  location: {
-    latitude: number;
-    longitude: number;
-    name: string;
-  };
-  reward: number;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  nftCount: number;
-}
 
 const ARHuntingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useTheme();
   const { state } = useApp();
+  const { selectedMission, isMissionActive, setIsMissionActive, setSelectedMission, setShowMissionDetails, showMissionDetails } = useMission();
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [locationPermission, setLocationPermission] = useState(false);
-  const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
-  const [showMissionModal, setShowMissionModal] = useState(false);
-  const [cameraActive, setCameraActive] = useState(false);
   const [showLocationOverride, setShowLocationOverride] = useState(false);
   const [overrideLatitude, setOverrideLatitude] = useState('');
   const [overrideLongitude, setOverrideLongitude] = useState('');
-  const [showMissionDetails, setShowMissionDetails] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'location' | 'mission' | 'details' | 'camera'>('location');
+  const glimmerAnimation = useRef(new Animated.Value(0)).current;
 
   // Mock missions with Barcelona locations
   const mockMissions: Mission[] = [
@@ -102,21 +89,60 @@ const ARHuntingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     requestLocationPermission();
   }, []);
 
+  // Start glimmer animation when mission is selected
+  useEffect(() => {
+    if (selectedMission) {
+      const startGlimmerAnimation = () => {
+        Animated.sequence([
+          Animated.timing(glimmerAnimation, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(glimmerAnimation, {
+            toValue: 0,
+            duration: 1000,
+            useNativeDriver: false,
+          }),
+        ]).start(() => startGlimmerAnimation());
+      };
+      startGlimmerAnimation();
+    }
+  }, [selectedMission, glimmerAnimation]);
+
+  // Handle mission details modal
+  useEffect(() => {
+    if (showMissionDetails && selectedMission) {
+      // Show mission details modal
+      Alert.alert(
+        'Mission Details',
+        `${selectedMission.title}\n\n${selectedMission.description}\n\nLocation: ${selectedMission.location.name}\nNFTs to find: ${selectedMission.nftCount}\nReward: ${selectedMission.reward} BONK\n\nTap the orange camera button again to start the mission!`,
+        [
+          { text: 'Cancel', onPress: () => setShowMissionDetails(false) },
+          { 
+            text: 'Start Mission', 
+            onPress: () => {
+              setShowMissionDetails(false);
+              setIsMissionActive(true);
+            }
+          }
+        ]
+      );
+    }
+  }, [showMissionDetails, selectedMission, setShowMissionDetails, setIsMissionActive]);
+
   const requestLocationPermission = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setLocationPermission(status === 'granted');
       
       if (status === 'granted') {
-        const currentLocation = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
-        });
+        const currentLocation = await Location.getCurrentPositionAsync({});
         setLocation(currentLocation);
-        console.log('Current location:', currentLocation.coords);
+        setCurrentStep('mission');
       }
     } catch (error) {
-      console.error('Error getting location:', error);
-      Alert.alert('Location Error', 'Unable to get your location. You can override it for testing.');
+      console.error('Error requesting location permission:', error);
     }
   };
 
@@ -134,82 +160,68 @@ const ARHuntingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleLocationOverride = () => {
     if (overrideLatitude && overrideLongitude) {
-      const lat = parseFloat(overrideLatitude);
-      const lon = parseFloat(overrideLongitude);
-      
-      if (isNaN(lat) || isNaN(lon)) {
-        Alert.alert('Invalid Coordinates', 'Please enter valid latitude and longitude values.');
-        return;
-      }
-
-      setLocation({
+      const mockLocation: Location.LocationObject = {
         coords: {
-          latitude: lat,
-          longitude: lon,
+          latitude: parseFloat(overrideLatitude),
+          longitude: parseFloat(overrideLongitude),
           altitude: null,
           accuracy: 10,
           altitudeAccuracy: null,
           heading: null,
-          speed: null
+          speed: null,
         },
-        timestamp: Date.now()
-      });
-      
+        timestamp: Date.now(),
+      };
+      setLocation(mockLocation);
       setShowLocationOverride(false);
-      Alert.alert('Location Updated', 'Your location has been updated for testing.');
+      setOverrideLatitude('');
+      setOverrideLongitude('');
+      setCurrentStep('mission');
     }
   };
 
-  const handleStartExploration = async () => {
-    if (!selectedMission) {
-      Alert.alert('No Mission Selected', 'Please select an exploration mission first.');
-      return;
-    }
-
-    // Show mission details modal first
-    setShowMissionDetails(true);
+  const handleMissionSelect = (mission: Mission) => {
+    setSelectedMission(mission);
+    setCurrentStep('details');
+    Alert.alert(
+      'Mission Selected!',
+      `${mission.title} has been selected. Tap the orange camera button to view mission details!`,
+      [{ text: 'OK' }]
+    );
   };
 
-  const handleStartMission = async () => {
-    if (!selectedMission) {
-      Alert.alert('No Mission Selected', 'Please select an exploration mission first.');
-      return;
+  const handleCameraButtonPress = () => {
+    switch (currentStep) {
+      case 'location':
+        // If location not set, show location override
+        if (!location) {
+          setShowLocationOverride(true);
+        } else {
+          setCurrentStep('mission');
+        }
+        break;
+      case 'mission':
+        // If no mission selected, do nothing (user needs to select first)
+        break;
+      case 'details':
+        // Show mission details modal
+        setShowMissionDetails(true);
+        break;
+      case 'camera':
+        // Start the camera/mission
+        setIsMissionActive(true);
+        break;
     }
-
-    // Check if user is near the mission location
-    if (location) {
-      const distance = calculateDistance(
-        location.coords.latitude,
-        location.coords.longitude,
-        selectedMission.location.latitude,
-        selectedMission.location.longitude
-      );
-
-      if (distance > 2.0) { // Increased to 2km for testing
-        Alert.alert(
-          'Too Far Away',
-          `You need to be within 2km of the mission location to start exploring. Current distance: ${distance.toFixed(2)}km`,
-          [
-            { text: 'Cancel' },
-            { 
-              text: 'Override Location', 
-              onPress: () => setShowLocationOverride(true)
-            }
-          ]
-        );
-        return;
-      }
-    }
-
-    // Start camera exploration - no wallet required for viewing
-    setCameraActive(true);
-    setShowMissionDetails(false);
   };
 
-  if (cameraActive) {
+  // If mission is active, show camera
+  if (isMissionActive) {
     return (
       <SimpleCamera
-        onClose={() => setCameraActive(false)}
+        onClose={() => {
+          setIsMissionActive(false);
+          setCurrentStep('details');
+        }}
         missionTitle={selectedMission?.title}
         missionDescription={selectedMission?.description}
       />
@@ -223,15 +235,12 @@ const ARHuntingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         <Text style={[styles.headerTitle, { color: colors.text }]}>
           AR Explore
         </Text>
-        <TouchableOpacity
-          style={styles.locationButton}
-          onPress={() => setShowLocationOverride(true)}
-        >
-          <Ionicons name="location" size={20} color={colors.primary} />
-          <Text style={[styles.locationText, { color: colors.textSecondary }]}>
-            {location ? 'Location Set' : 'Set Location'}
-          </Text>
-        </TouchableOpacity>
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+          {currentStep === 'location' && 'Set your location to start'}
+          {currentStep === 'mission' && 'Select a mission to explore'}
+          {currentStep === 'details' && 'Tap the orange button to view details'}
+          {currentStep === 'camera' && 'Ready to start your mission!'}
+        </Text>
       </View>
 
       {/* Location Status */}
@@ -249,192 +258,90 @@ const ARHuntingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         </Text>
       </View>
 
-      {/* Mission Selection */}
-      <View style={styles.missionSection}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Available Missions
-        </Text>
-        <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-          Select a mission to start exploring
-        </Text>
-        
-        <ScrollView style={styles.missionList}>
-          {mockMissions.map((mission) => (
-            <TouchableOpacity
-              key={mission.id}
-              style={[
-                styles.missionCard,
-                { backgroundColor: colors.surface },
-                selectedMission?.id === mission.id && { borderColor: colors.primary, borderWidth: 2 }
-              ]}
-              onPress={() => setSelectedMission(mission)}
-            >
-              <View style={styles.missionHeader}>
-                <Text style={[styles.missionTitle, { color: colors.text }]}>
-                  {mission.title}
-                </Text>
-                <View style={[styles.difficultyBadge, { backgroundColor: colors.primary }]}>
-                  <Text style={[styles.difficultyText, { color: colors.text }]}>
-                    {mission.difficulty}
-                  </Text>
-                </View>
-              </View>
-              
-              <Text style={[styles.missionDescription, { color: colors.textSecondary }]}>
-                {mission.description}
-              </Text>
-              
-              <View style={styles.missionDetails}>
-                <View style={styles.missionDetail}>
-                  <Ionicons name="location" size={16} color={colors.textSecondary} />
-                  <Text style={[styles.missionDetailText, { color: colors.textSecondary }]}>
-                    {mission.location.name}
-                  </Text>
-                </View>
-                
-                <View style={styles.missionDetail}>
-                  <Ionicons name="diamond" size={16} color={colors.primary} />
-                  <Text style={[styles.missionDetailText, { color: colors.textSecondary }]}>
-                    {mission.nftCount} NFTs
-                  </Text>
-                </View>
-                
-                <View style={styles.missionDetail}>
-                  <Ionicons name="wallet" size={16} color="#FFD700" />
-                  <Text style={[styles.missionDetailText, { color: colors.textSecondary }]}>
-                    {mission.reward} BONK
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Start Exploration Button */}
-      {selectedMission && (
-        <TouchableOpacity
-          style={[
-            styles.startButton, 
-            { 
-              backgroundColor: colors.primary,
-              shadowColor: colors.primary,
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.8,
-              shadowRadius: 15,
-              elevation: 15,
-            }
-          ]}
-          onPress={handleStartExploration}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="camera" size={28} color={colors.text} />
-          <Text style={[styles.startButtonText, { color: colors.text }]}>
-            START EXPLORATION
+      {/* Mission Selection - Only show when in mission step */}
+      {currentStep === 'mission' && (
+        <View style={styles.missionSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Available Missions
           </Text>
-        </TouchableOpacity>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+            Select a mission to start exploring
+          </Text>
+          
+          <ScrollView style={styles.missionList}>
+            {mockMissions.map((mission) => (
+              <TouchableOpacity
+                key={mission.id}
+                style={[
+                  styles.missionCard,
+                  { backgroundColor: colors.surface },
+                  selectedMission?.id === mission.id && { 
+                    borderColor: colors.primary, 
+                    borderWidth: 3,
+                    backgroundColor: colors.primary + '20',
+                  }
+                ]}
+                onPress={() => handleMissionSelect(mission)}
+              >
+                <View style={styles.missionHeader}>
+                  <Text style={[styles.missionTitle, { color: colors.text }]}>
+                    {mission.title}
+                  </Text>
+                  <View style={[styles.difficultyBadge, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.difficultyText, { color: colors.text }]}>
+                      {mission.difficulty}
+                    </Text>
+                  </View>
+                  {selectedMission?.id === mission.id && (
+                    <View style={[styles.selectedIndicator, { backgroundColor: colors.success }]}>
+                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    </View>
+                  )}
+                </View>
+                
+                <Text style={[styles.missionDescription, { color: colors.textSecondary }]}>
+                  {mission.description}
+                </Text>
+                
+                <View style={styles.missionDetails}>
+                  <View style={styles.missionDetail}>
+                    <Ionicons name="location" size={16} color={colors.textSecondary} />
+                    <Text style={[styles.missionDetailText, { color: colors.textSecondary }]}>
+                      {mission.location.name}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.missionDetail}>
+                    <Ionicons name="diamond" size={16} color={colors.primary} />
+                    <Text style={[styles.missionDetailText, { color: colors.textSecondary }]}>
+                      {mission.nftCount} NFTs
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.missionDetail}>
+                    <Ionicons name="wallet" size={16} color="#FFD700" />
+                    <Text style={[styles.missionDetailText, { color: colors.textSecondary }]}>
+                      {mission.reward} BONK
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
       )}
 
-      {/* Mission Details Modal */}
-      <Modal
-        visible={showMissionDetails}
-        transparent
-        animationType="slide"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            {selectedMission && (
-              <>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>
-                  Mission Details
-                </Text>
-                
-                <View style={styles.missionDetailsContent}>
-                  <Text style={[styles.missionDetailTitle, { color: colors.text }]}>
-                    {selectedMission.title}
-                  </Text>
-                  
-                  <Text style={[styles.missionDetailDescription, { color: colors.textSecondary }]}>
-                    {selectedMission.description}
-                  </Text>
-                  
-                  <View style={styles.missionDetailStats}>
-                    <View style={styles.missionDetailStat}>
-                      <Ionicons name="location" size={20} color={colors.primary} />
-                      <Text style={[styles.missionDetailStatText, { color: colors.text }]}>
-                        {selectedMission.location.name}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.missionDetailStat}>
-                      <Ionicons name="diamond" size={20} color={colors.primary} />
-                      <Text style={[styles.missionDetailStatText, { color: colors.text }]}>
-                        {selectedMission.nftCount} NFTs Available
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.missionDetailStat}>
-                      <Ionicons name="wallet" size={20} color="#FFD700" />
-                      <Text style={[styles.missionDetailStatText, { color: colors.text }]}>
-                        {selectedMission.reward} BONK Reward
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.missionDetailStat}>
-                      <Ionicons name="trophy" size={20} color={colors.primary} />
-                      <Text style={[styles.missionDetailStatText, { color: colors.text }]}>
-                        Difficulty: {selectedMission.difficulty}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  <View style={styles.missionDetailInstructions}>
-                    <Text style={[styles.missionDetailInstructionsTitle, { color: colors.text }]}>
-                      How to Play:
-                    </Text>
-                    <Text style={[styles.missionDetailInstructionsText, { color: colors.textSecondary }]}>
-                      • Point your camera at the location{'\n'}
-                      • Look for floating NFT indicators{'\n'}
-                      • Tap to interact with NFTs{'\n'}
-                      • Mint NFTs to earn BONK rewards{'\n'}
-                      • Complete the mission to unlock special rewards
-                    </Text>
-                  </View>
-                </View>
-                
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: colors.error }]}
-                    onPress={() => setShowMissionDetails(false)}
-                  >
-                    <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancel</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={[
-                      styles.modalButton, 
-                      { 
-                        backgroundColor: colors.primary,
-                        shadowColor: colors.primary,
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.6,
-                        shadowRadius: 10,
-                        elevation: 10,
-                      }
-                    ]}
-                    onPress={handleStartMission}
-                  >
-                    <Ionicons name="camera" size={20} color={colors.text} />
-                    <Text style={[styles.modalButtonText, { color: colors.text }]}>
-                      START MISSION
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </View>
+      {/* Mission Status - Show when mission is selected */}
+      {selectedMission && currentStep === 'details' && (
+        <View style={styles.missionStatusContainer}>
+          <Text style={[styles.missionStatusText, { color: colors.text }]}>
+            Mission Selected: {selectedMission.title}
+          </Text>
+          <Text style={[styles.missionStatusSubtext, { color: colors.textSecondary }]}>
+            Tap the orange camera button to view mission details and start exploring
+          </Text>
         </View>
-      </Modal>
+      )}
 
       {/* Location Override Modal */}
       <Modal
@@ -447,33 +354,24 @@ const ARHuntingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               Override Location
             </Text>
-            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-              Enter coordinates for testing purposes
-            </Text>
             
-            <View style={styles.inputContainer}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Latitude:</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
-                value={overrideLatitude}
-                onChangeText={setOverrideLatitude}
-                placeholder="41.4036"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="numeric"
-              />
-            </View>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
+              placeholder="Latitude"
+              placeholderTextColor={colors.textSecondary}
+              value={overrideLatitude}
+              onChangeText={setOverrideLatitude}
+              keyboardType="numeric"
+            />
             
-            <View style={styles.inputContainer}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Longitude:</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
-                value={overrideLongitude}
-                onChangeText={setOverrideLongitude}
-                placeholder="2.1744"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="numeric"
-              />
-            </View>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
+              placeholder="Longitude"
+              placeholderTextColor={colors.textSecondary}
+              value={overrideLongitude}
+              onChangeText={setOverrideLongitude}
+              keyboardType="numeric"
+            />
             
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -510,18 +408,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  locationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  locationText: {
-    marginLeft: 10,
+  headerSubtitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 10,
   },
   locationStatus: {
     flexDirection: 'row',
@@ -592,113 +482,70 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     fontSize: 13,
   },
-  startButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 20,
+  missionStatusContainer: {
     padding: 20,
-    borderRadius: 12,
+    alignItems: 'center',
   },
-  startButtonText: {
-    fontSize: 18,
+  missionStatusText: {
+    fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 10,
+    textAlign: 'center',
+  },
+  missionStatusSubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 5,
   },
   modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    borderRadius: 12,
-    width: '90%',
-    maxHeight: '60%',
+    width: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     padding: 20,
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  modalSubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
     marginBottom: 20,
-  },
-  inputContainer: {
-    marginBottom: 15,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    textAlign: 'center',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: '#CCCCCC',
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
+    marginBottom: 15,
     fontSize: 16,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 5,
+    alignItems: 'center',
   },
   modalButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
   },
-  missionDetailsContent: {
-    padding: 20,
-  },
-  missionDetailTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  missionDetailDescription: {
-    fontSize: 14,
-    marginBottom: 15,
-  },
-  missionDetailStats: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  missionDetailStat: {
-    flexDirection: 'row',
+  selectedIndicator: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-    width: '48%',
-    marginBottom: 10,
-  },
-  missionDetailStatText: {
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  missionDetailInstructions: {
-    marginTop: 15,
-  },
-  missionDetailInstructionsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  missionDetailInstructionsText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 20,
-  },
-  modalButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 5,
   },
 });
 

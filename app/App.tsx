@@ -8,6 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { AppProvider } from './src/context/AppContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { MissionProvider } from './src/context/MissionContext';
+import CustomTabBar from './src/components/CustomTabBar';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import ARHuntingScreen from './src/screens/ARHuntingScreen';
@@ -56,40 +58,13 @@ const MainApp: React.FC = () => {
 
   return (
     <Tab.Navigator
+      tabBar={props => <CustomTabBar {...props} />}
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
-
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Explore') {
-            iconName = focused ? 'camera' : 'camera-outline';
-          } else if (route.name === 'User') {
-            iconName = focused ? 'person' : 'person-outline';
-          } else {
-            iconName = 'help-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
         headerStyle: {
           backgroundColor: colors.surface,
         },
         headerTintColor: colors.text,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          height: 80,
-          paddingBottom: 10,
-          paddingTop: 10,
-        },
         cardStyle: { backgroundColor: colors.background },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
       })}
     >
       <Tab.Screen 
@@ -98,8 +73,6 @@ const MainApp: React.FC = () => {
         options={{ 
           title: 'SolAR Field',
           tabBarLabel: 'SolAR Field',
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.textSecondary,
         }}
       />
       <Tab.Screen 
@@ -108,24 +81,6 @@ const MainApp: React.FC = () => {
         options={{ 
           title: 'AR Explore',
           tabBarLabel: 'Explore',
-          tabBarActiveTintColor: '#000000',
-          tabBarInactiveTintColor: '#000000',
-          tabBarIconStyle: {
-            backgroundColor: colors.primary,
-            borderRadius: 35,
-            padding: 12,
-            marginBottom: 8,
-            width: 70,
-            height: 70,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginTop: -20,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-            elevation: 8,
-          },
         }}
       />
       <Tab.Screen 
@@ -134,8 +89,6 @@ const MainApp: React.FC = () => {
         options={{ 
           title: 'User',
           tabBarLabel: 'User',
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.textSecondary,
         }}
       />
     </Tab.Navigator>
@@ -195,7 +148,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AppProvider>
-        <RootApp />
+        <MissionProvider>
+          <RootApp />
+        </MissionProvider>
       </AppProvider>
     </ThemeProvider>
   );

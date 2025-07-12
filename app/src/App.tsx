@@ -3,11 +3,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppProvider } from './context/AppContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { MissionProvider, useMission } from './context/MissionContext';
 import HomeScreen from './screens/HomeScreen';
 import ARHuntingScreen from './screens/ARHuntingScreen';
 import MapScreen from './screens/MapScreen';
@@ -18,6 +19,7 @@ import TrophyRoomScreen from './screens/TrophyRoomScreen';
 import NFTCreatorScreen from './screens/NFTCreatorScreen';
 import NFTPlacementScreen from './screens/NFTPlacementScreen';
 import CollectionDetailScreen from './screens/CollectionDetailScreen';
+import MissionDetailsModal from './components/MissionDetailsModal';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -44,6 +46,33 @@ const UserStack = () => {
   );
 };
 
+// Simple Camera Tab Button that doesn't use context
+const CameraTabButton: React.FC<{ onPress: () => void; focused: boolean }> = ({ onPress, focused }) => {
+  const { colors } = useTheme();
+  
+  return (
+    <TouchableOpacity
+      style={[
+        styles.cameraTabButton,
+        {
+          backgroundColor: focused ? colors.primary : colors.surface,
+          // Add a subtle indicator when focused (mission might be selected)
+          borderWidth: focused ? 2 : 0,
+          borderColor: focused ? '#FFD700' : 'transparent',
+        }
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Ionicons 
+        name={focused ? 'camera' : 'camera-outline'} 
+        size={24} 
+        color={focused ? colors.text : colors.textSecondary} 
+      />
+    </TouchableOpacity>
+  );
+};
+
 // Main App Component with Theme Support
 const MainApp: React.FC = () => {
   const { colors } = useTheme();
@@ -59,7 +88,8 @@ const MainApp: React.FC = () => {
             if (route.name === 'Home') {
               iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Camera') {
-              iconName = focused ? 'camera' : 'camera-outline';
+              // Custom camera tab button
+              return <CameraTabButton onPress={() => {}} focused={focused} />;
             } else if (route.name === 'Map') {
               iconName = focused ? 'map' : 'map-outline';
             } else if (route.name === 'User') {
@@ -103,31 +133,36 @@ const MainApp: React.FC = () => {
           options={{ title: 'User' }}
         />
       </Tab.Navigator>
+      
+      {/* Mission Details Modal */}
+      <MissionDetailsModal />
     </NavigationContainer>
   );
 };
 
-// Root App Component with Providers
-export default function App() {
+// Root App Component with all providers
+const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AppProvider>
-        <MainApp />
+        <MissionProvider>
+          <MainApp />
+        </MissionProvider>
       </AppProvider>
     </ThemeProvider>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  cameraTabButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A1A',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 25,
+    minWidth: 120,
   },
-  loadingText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-}); 
+});
+
+export default App; 
