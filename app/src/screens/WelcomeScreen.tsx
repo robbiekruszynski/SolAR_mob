@@ -1,272 +1,202 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { Canvas, useFrame } from '@react-three/fiber/native';
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import * as THREE from 'three';
-import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
 
 const { width, height } = Dimensions.get('window');
-
-// Simple 3D Background Component with Interactive Blob Shapes
-const AnimatedBackground: React.FC<{ rotationX: number; rotationY: number }> = ({ 
-  rotationX, 
-  rotationY
-}) => {
-  const mainBlobRef = useRef<THREE.Mesh>(null);
-  const secondaryBlobRef = useRef<THREE.Mesh>(null);
-
-  useFrame((state) => {
-    if (mainBlobRef.current) {
-      mainBlobRef.current.rotation.x = rotationX + Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
-      mainBlobRef.current.rotation.y = rotationY + Math.sin(state.clock.elapsedTime * 0.2) * 0.1;
-    }
-    
-    if (secondaryBlobRef.current) {
-      secondaryBlobRef.current.rotation.x = rotationX * 0.7 + Math.sin(state.clock.elapsedTime * 0.4) * 0.08;
-      secondaryBlobRef.current.rotation.y = rotationY * 0.7 + Math.sin(state.clock.elapsedTime * 0.25) * 0.08;
-    }
-  });
-
-  return (
-    <>
-      {/* Lighting */}
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[10, 10, 5]} intensity={0.8} />
-      
-      {/* Main Large Blob */}
-      <mesh
-        ref={mainBlobRef}
-        position={[0, 0, -5]}
-      >
-        <sphereGeometry args={[4, 32, 32]} />
-        <meshStandardMaterial 
-          color="#4A4A6A" 
-          transparent 
-          opacity={0.9}
-          roughness={0.6}
-          metalness={0.4}
-        />
-      </mesh>
-      
-      {/* Secondary Blob */}
-      <mesh 
-        ref={secondaryBlobRef}
-        position={[-3, 2, -4]}
-      >
-        <dodecahedronGeometry args={[2]} />
-        <meshStandardMaterial 
-          color="#6A4A6A" 
-          transparent 
-          opacity={0.8}
-          roughness={0.5}
-          metalness={0.5}
-        />
-      </mesh>
-      
-      {/* Floating Elements */}
-      {Array.from({ length: 6 }).map((_, i) => (
-        <mesh
-          key={i}
-          position={[
-            (Math.random() - 0.5) * 15,
-            (Math.random() - 0.5) * 15,
-            -8 - Math.random() * 10
-          ]}
-          rotation={[
-            rotationX * 0.2 + Math.sin(i * 0.5) * 0.1,
-            rotationY * 0.2 + Math.cos(i * 0.3) * 0.1,
-            0
-          ]}
-        >
-          <icosahedronGeometry args={[0.8 + Math.random() * 0.8]} />
-          <meshStandardMaterial 
-            color={i % 3 === 0 ? "#4A4A6A" : i % 3 === 1 ? "#6A4A6A" : "#4A6A6A"} 
-            transparent 
-            opacity={0.7 + Math.random() * 0.3}
-            roughness={0.4 + Math.random() * 0.3}
-            metalness={0.3 + Math.random() * 0.3}
-          />
-        </mesh>
-      ))}
-      
-      {/* Particle Field */}
-      {Array.from({ length: 50 }).map((_, i) => (
-        <mesh
-          key={`particle-${i}`}
-          position={[
-            (Math.random() - 0.5) * 25,
-            (Math.random() - 0.5) * 25,
-            -12 - Math.random() * 15
-          ]}
-          rotation={[
-            rotationX * 0.05 + Math.sin(i * 0.1) * 0.02,
-            rotationY * 0.05 + Math.cos(i * 0.08) * 0.02,
-            0
-          ]}
-        >
-          <sphereGeometry args={[0.1 + Math.random() * 0.2, 8, 8]} />
-          <meshStandardMaterial 
-            color={i % 4 === 0 ? "#FF6B35" : i % 4 === 1 ? "#9C27B0" : i % 4 === 2 ? "#2196F3" : "#4CAF50"} 
-            transparent 
-            opacity={0.6 + Math.random() * 0.4}
-          />
-        </mesh>
-      ))}
-      
-      {/* Fog Effect */}
-      <fog attach="fog" args={['#2A2A2A', 8, 25]} />
-    </>
-  );
-};
 
 interface WelcomeScreenProps {
   navigation: any;
 }
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
-  const { colors, setTheme } = useTheme();
-  const [rotationX, setRotationX] = useState(0);
-  const [rotationY, setRotationY] = useState(0);
-
-  // Set dark mode by default
-  React.useEffect(() => {
-    setTheme('dark');
-  }, [setTheme]);
-
-  const handleEnter = () => {
-    navigation.replace('MainApp');
-  };
-
-  const onGestureEvent = (event: any) => {
-    const { translationX, translationY } = event.nativeEvent;
-    
-    // Responsive gesture controls
-    setRotationY(prev => prev + translationX * 0.01);
-    setRotationX(prev => prev - translationY * 0.01);
-  };
-
-  const onHandlerStateChange = (event: any) => {
-    if (event.nativeEvent.state === State.END) {
-      // Add momentum effect
-      const { velocityX, velocityY } = event.nativeEvent;
-      if (Math.abs(velocityX) > 50 || Math.abs(velocityY) > 50) {
-        setRotationY(prev => prev + velocityX * 0.0005);
-        setRotationX(prev => prev - velocityY * 0.0005);
-      }
-    }
-  };
+  const { colors } = useTheme();
 
   return (
-    <GestureHandlerRootView style={[styles.container, { backgroundColor: '#2A2A2A' }]}>
-      {/* 3D Background */}
-      <View style={styles.canvasContainer}>
-        <Canvas
-          style={styles.canvas}
-          camera={{ position: [0, 0, 10], fov: 60 }}
-          gl={{ antialias: true }}
-        >
-          <AnimatedBackground 
-            rotationX={rotationX}
-            rotationY={rotationY}
-          />
-        </Canvas>
-      </View>
-      
-      {/* Touch Gesture Handler - Full screen */}
-      <PanGestureHandler
-        onGestureEvent={onGestureEvent}
-        onHandlerStateChange={onHandlerStateChange}
-      >
-        <View style={styles.gestureArea} />
-      </PanGestureHandler>
-      
-      {/* Content Overlay - Always on top */}
-      <View style={styles.content}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
+          <Ionicons name="diamond" size={48} color={colors.text} />
+        </View>
         <Text style={[styles.title, { color: colors.text }]}>
-          SOL.AR FIELD
+          SolAR Treasure Hunt
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Augmented Reality Treasure Exploration
+          Discover NFTs in the real world
         </Text>
-        
+      </View>
+
+      {/* Features */}
+      <View style={styles.featuresContainer}>
+        <View style={styles.featureItem}>
+          <View style={[styles.featureIcon, { backgroundColor: colors.primary }]}>
+            <Ionicons name="camera" size={24} color={colors.text} />
+          </View>
+          <View style={styles.featureText}>
+            <Text style={[styles.featureTitle, { color: colors.text }]}>
+              AR Camera
+            </Text>
+            <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
+              Use your camera to discover hidden NFTs
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.featureItem}>
+          <View style={[styles.featureIcon, { backgroundColor: colors.primary }]}>
+            <Ionicons name="map" size={24} color={colors.text} />
+          </View>
+          <View style={styles.featureText}>
+            <Text style={[styles.featureTitle, { color: colors.text }]}>
+              Treasure Map
+            </Text>
+            <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
+              Explore locations and find rare collectibles
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.featureItem}>
+          <View style={[styles.featureIcon, { backgroundColor: colors.primary }]}>
+            <Ionicons name="wallet" size={24} color={colors.text} />
+          </View>
+          <View style={styles.featureText}>
+            <Text style={[styles.featureTitle, { color: colors.text }]}>
+              Solana Wallet
+            </Text>
+            <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
+              Mint NFTs and earn BONK rewards
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Action Buttons */}
+      <View style={styles.actionsContainer}>
         <TouchableOpacity
-          style={[styles.enterButton, { backgroundColor: colors.primary }]}
-          onPress={handleEnter}
-          activeOpacity={0.8}
+          style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+          onPress={() => navigation.navigate('MainApp')}
         >
-          <Text style={[styles.enterButtonText, { color: colors.text }]}>
-            ENTER
+          <Text style={[styles.primaryButtonText, { color: colors.text }]}>
+            Get Started
+          </Text>
+          <Ionicons name="arrow-forward" size={20} color={colors.text} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.secondaryButton, { backgroundColor: colors.surface }]}
+          onPress={() => navigation.navigate('MainApp', { screen: 'User' })}
+        >
+          <Text style={[styles.secondaryButtonText, { color: colors.text }]}>
+            Connect Wallet
           </Text>
         </TouchableOpacity>
       </View>
-    </GestureHandlerRootView>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+          Built for Solana Mobile Hackathon
+        </Text>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 20,
   },
-  canvasContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  header: {
+    alignItems: 'center',
+    marginTop: 60,
+    marginBottom: 60,
   },
-  canvas: {
-    flex: 1,
-  },
-  gestureArea: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-  content: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2,
-    paddingHorizontal: 40,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
+  },
+  featuresContainer: {
     marginBottom: 60,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
-  enterButton: {
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
   },
-  enterButtonText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  featureIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  featureText: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  actionsContainer: {
+    marginBottom: 40,
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  primaryButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  secondaryButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  footer: {
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
   },
 });
 
