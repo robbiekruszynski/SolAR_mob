@@ -53,7 +53,7 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ navigation }) => {
           <Ionicons name="wallet-outline" size={64} color="#FF6B35" />
           <Text style={styles.connectTitle}>Connect Your Wallet</Text>
           <Text style={styles.connectSubtitle}>
-            Connect your Solana wallet to start hunting treasures
+            Connect your Solana wallet to start exploring treasures
           </Text>
           <TouchableOpacity style={styles.connectButton} onPress={handleConnectWallet}>
             <Ionicons name="wallet" size={24} color="#FFFFFF" />

@@ -170,7 +170,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Leaderboard</Text>
-        <Text style={styles.subtitle}>Top Treasure Hunters</Text>
+        <Text style={styles.subtitle}>Top Treasure Explorers</Text>
       </View>
 
       {/* Stats */}

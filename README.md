@@ -21,6 +21,53 @@ A mobile AR treasure hunt game built for Solana Mobile, where users hunt for AR 
 - **Location**: React Native Location Services
 - **UI**: React Native Elements + Custom Components
 
+## 🔐 Security & Environment Variables
+
+### Important Security Notes
+
+This project contains sensitive configuration that should be kept private:
+
+- **API Keys**: Google Maps API, AR service API keys
+- **Program IDs**: Solana program addresses (when deploying to mainnet)
+- **RPC URLs**: Custom Solana RPC endpoints
+- **Development Keys**: Mock wallet addresses (development only)
+
+### Environment Variables
+
+Create a `.env` file in the `app/` directory with the following variables:
+
+```bash
+# Solana Configuration
+SOLANA_RPC_URL=https://api.devnet.solana.com
+SOLANA_WS_URL=wss://api.devnet.solana.com
+SOLANA_NETWORK=devnet
+
+# Program IDs (Replace with actual program IDs when deploying)
+TREASURE_HUNT_PROGRAM_ID=your_program_id_here
+BONK_TOKEN_MINT=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263
+
+# Mock Wallet (for development only - DO NOT USE IN PRODUCTION)
+MOCK_WALLET_ADDRESS=7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+
+# API Keys (Add your actual API keys here)
+MAPS_API_KEY=your_google_maps_api_key_here
+AR_API_KEY=your_ar_service_api_key_here
+
+# Development Configuration
+DEBUG_MODE=true
+```
+
+### Security Checklist
+
+Before sharing your repository publicly:
+
+- [ ] Ensure `.env` file is in `.gitignore`
+- [ ] Replace placeholder API keys with actual keys
+- [ ] Set `DEBUG_MODE=false` for production
+- [ ] Remove mock wallet addresses for mainnet
+- [ ] Use proper program IDs for your deployed contracts
+- [ ] Review all hardcoded values in `config.ts`
+
 ## 🚀 Quick Start
 
 ### Prerequisites

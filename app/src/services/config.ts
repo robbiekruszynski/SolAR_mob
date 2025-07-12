@@ -7,7 +7,7 @@ export const CONFIG = {
   SOLANA_WS_URL: process.env.SOLANA_WS_URL || 'wss://api.devnet.solana.com',
   SOLANA_NETWORK: process.env.SOLANA_NETWORK || 'devnet',
   
-  // Program IDs
+  // Program IDs (These should be replaced with actual program IDs in production)
   TREASURE_HUNT_PROGRAM_ID: new PublicKey(
     process.env.TREASURE_HUNT_PROGRAM_ID || 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS'
   ),
@@ -17,11 +17,11 @@ export const CONFIG = {
     process.env.BONK_TOKEN_MINT || 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263'
   ),
   
-  // API Keys
+  // API Keys (These should be set in .env file for production)
   AR_API_KEY: process.env.AR_API_KEY || '',
   MAPS_API_KEY: process.env.MAPS_API_KEY || '',
   
-  // Development Configuration
+  // Development Configuration (DO NOT USE IN PRODUCTION)
   DEBUG_MODE: process.env.DEBUG_MODE === 'true',
   MOCK_WALLET_ADDRESS: process.env.MOCK_WALLET_ADDRESS || '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
   
@@ -60,6 +60,32 @@ export const NETWORK_CONFIG = {
   },
 };
 
+// Security validation
+export const validateSecurityConfig = () => {
+  const warnings: string[] = [];
+  
+  // Check for development settings in production
+  if (CONFIG.DEBUG_MODE && CONFIG.SOLANA_NETWORK === 'mainnet') {
+    warnings.push('DEBUG_MODE should be false in production');
+  }
+  
+  // Check for placeholder API keys
+  if (CONFIG.AR_API_KEY === '' || CONFIG.AR_API_KEY === 'your_ar_service_api_key_here') {
+    warnings.push('AR_API_KEY should be set for production');
+  }
+  
+  if (CONFIG.MAPS_API_KEY === '' || CONFIG.MAPS_API_KEY === 'your_google_maps_api_key_here') {
+    warnings.push('MAPS_API_KEY should be set for production');
+  }
+  
+  // Check for mock wallet in production
+  if (CONFIG.SOLANA_NETWORK === 'mainnet' && CONFIG.MOCK_WALLET_ADDRESS) {
+    warnings.push('MOCK_WALLET_ADDRESS should not be used in production');
+  }
+  
+  return warnings;
+};
+
 // Validation
 export const validateConfig = () => {
   const requiredFields = [
@@ -72,6 +98,12 @@ export const validateConfig = () => {
   
   if (missingFields.length > 0) {
     throw new Error(`Missing required configuration: ${missingFields.join(', ')}`);
+  }
+  
+  // Check for security warnings
+  const securityWarnings = validateSecurityConfig();
+  if (securityWarnings.length > 0) {
+    console.warn('Security warnings:', securityWarnings);
   }
   
   return true;

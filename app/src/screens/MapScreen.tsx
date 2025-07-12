@@ -45,7 +45,7 @@ const MapScreen: React.FC<MapScreenProps> = ({ navigation }) => {
             style={[styles.treasureCard, treasure.isFound && styles.foundCard]}
             onPress={() => {
               if (!treasure.isFound) {
-                navigation.navigate('AR');
+                navigation.navigate('Camera');
               }
             }}
           >
